@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Tic Tac Toe AI</title>
+
+<!-- SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+body{
+  background:#0f0f1a;
+  color:#00fff7;
+  font-family:Arial, Helvetica, sans-serif;
+  text-align:center;
+  margin:0;
+  padding:0;
+}
+
+h1{
+  margin-top:20px;
+  text-shadow:0 0 20px #00fff7;
+}
+
+.board{
+  display:grid;
+  grid-template-columns:repeat(3,100px);
+  gap:10px;
+  justify-content:center;
+  margin-top:40px;
+}
+
+.cell{
+  width:100px;
+  height:100px;
+  background:#111;
+  border:2px solid #00fff7;
+  font-size:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:0.3s;
+  text-shadow:0 0 15px #00fff7;
+}
+
+.cell:hover{
+  background:#00fff733;
+  transform:scale(1.05);
+}
+
+#status{
+  margin-top:20px;
+  font-size:20px;
+  text-shadow:0 0 10px #ff00ff;
+}
+
+button{
+  margin-top:20px;
+  padding:10px 20px;
+  background:#ff00ff;
+  border:none;
+  color:white;
+  cursor:pointer;
+  font-size:16px;
+  border-radius:5px;
+  box-shadow:0 0 10px #ff00ff;
+  transition:0.3s;
+}
+
+button:hover{
+  background:#ff00ffaa;
+  transform:scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔥 Neon Tic Tac Toe AI 🔥</h1>
+
+<div class="board">
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+  <div class="cell"></div>
+</div>
+
+<div id="status">Your Turn (X)</div>
+<button onclick="resetGame()">Reset Game</button>
+
+<script>
+const cells=document.querySelectorAll(".cell");
+const statusText=document.getElementById("status");
+
+let board=["","","","","","","","",""];
+let gameActive=true;
+
+const HUMAN="X";
+const AI="O";
+
+const winConditions=[
+[0,1,2],[3,4,5],[6,7,8],
+[0,3,6],[1,4,7],[2,5,8],
+[0,4,8],[2,4,6]
+];
+
+cells.forEach((cell,index)=>{
+  cell.addEventListener("click",()=>{
+    if(board[index]==="" && gameActive){
+      makeMove(index,HUMAN);
+      if(!checkEnd(HUMAN)){
+        setTimeout(aiMove,500);
+      }
+    }
+  });
+});
+
+function makeMove(index,player){
+  board[index]=player;
+  cells[index].textContent=player;
+}
+
+function aiMove(){
+  let bestMove=minimax(board,AI).index;
+  makeMove(bestMove,AI);
+  checkEnd(AI);
+}
+
+function checkEnd(player){
+  if(checkWin(player)){
+    gameActive=false;
+    showWinPopup(player);
+    return true;
+  }
+  if(!board.includes("")){
+    gameActive=false;
+    showDrawPopup();
+    return true;
+  }
+  return false;
+}
+
+function checkWin(player){
+  return winConditions.some(condition=>{
+    return condition.every(index=>board[index]===player);
+  });
+}
+
+function resetGame(){
+  board=["","","","","","","","",""];
+  gameActive=true;
+  statusText.textContent="Your Turn (X)";
+  cells.forEach(cell=>cell.textContent="");
+}
+
+function showWinPopup(player){
+  if(player===HUMAN){
+    Swal.fire({
+      title:"🎉 You Won!",
+      text:"Amazing Skills!",
+      icon:"success",
+      background:"#111",
+      color:"#00fff7",
+      confirmButtonColor:"#ff00ff"
+    }).then(resetGame);
+  }else{
+    Swal.fire({
+      title:"🤖 AI Wins!",
+      text:"Try Again!",
+      icon:"error",
+      background:"#111",
+      color:"#00fff7",
+      confirmButtonColor:"#ff00ff"
+    }).then(resetGame);
+  }
+}
+
+function showDrawPopup(){
+  Swal.fire({
+    title:"🤝 Draw!",
+    text:"Well Played!",
+    icon:"info",
+    background:"#111",
+    color:"#00fff7",
+    confirmButtonColor:"#ff00ff"
+  }).then(resetGame);
+}
+
+/* Minimax AI */
+function minimax(newBoard,player){
+  let empty=newBoard.map((v,i)=>v===""?i:null).filter(v=>v!==null);
+
+  if(checkWin(HUMAN)) return {score:-10};
+  if(checkWin(AI)) return {score:10};
+  if(empty.length===0) return {score:0};
+
+  let moves=[];
+
+  for(let i=0;i<empty.length;i++){
+    let move={};
+    move.index=empty[i];
+    newBoard[empty[i]]=player;
+
+    if(player===AI){
+      move.score=minimax(newBoard,HUMAN).score;
+    }else{
+      move.score=minimax(newBoard,AI).score;
+    }
+
+    newBoard[empty[i]]="";
+    moves.push(move);
+  }
+
+  let bestMove;
+  if(player===AI){
+    let bestScore=-1000;
+    for(let i=0;i<moves.length;i++){
+      if(moves[i].score>bestScore){
+        bestScore=moves[i].score;
+        bestMove=i;
+      }
+    }
+  }else{
+    let bestScore=1000;
+    for(let i=0;i<moves.length;i++){
+      if(moves[i].score<bestScore){
+        bestScore=moves[i].score;
+        bestMove=i;
+      }
+    }
+  }
+
+  return moves[bestMove];
+}
+</script>
+
+</body>
+</html>
